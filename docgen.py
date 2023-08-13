@@ -65,7 +65,7 @@ def main():
     root.title("Swim Ontario - Officials Doc Generator")
     icon_file = os.path.abspath(os.path.join(bundle_dir, 'media','swon-logo.ico'))
     root.iconbitmap(icon_file)
-    root.geometry(f"{680}x{850}")
+    root.geometry(f"{680}x{1080}")
     root.columnconfigure(0, weight=1)
     root.rowconfigure(0, weight=1)
     root.resizable(True, True)

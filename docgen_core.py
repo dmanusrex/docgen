@@ -27,6 +27,7 @@ from threading import Thread
 import tkinter as tk
 import numpy as np
 import os
+import keyring
 from slugify import slugify
 
 from datetime import datetime
@@ -37,6 +38,13 @@ import docx
 from docxcompose.composer import Composer
 
 import logging
+
+import smtplib, ssl
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.mime.base import MIMEBase
+from email import encoders
+
 
 class docgenCore:
 
@@ -314,3 +322,103 @@ class Generate_Reports(Thread):
         logging.info("Report Complete")
 
 
+class Email_Reports(Thread):
+    def __init__(self, testmode:bool, config: docgenConfig):
+        super().__init__()
+        self._testmode : bool = testmode
+        self._config : docgenConfig = config
+        self._email_password : str = "EMPTY"
+
+        self._email_smtp_server = self._config.get_str("email_smtp_server")
+        self._email_smtp_port = self._config.get_str("email_smtp_port")
+        self._email_smtp_user = self._config.get_str("email_smtp_user")
+        self._email_from = self._config.get_str("email_from")
+        self._email_subject = self._config.get_str("email_subject")
+        self._email_body = self._config.get_str("email_body")
+
+    def run(self):
+        logging.info("Sending E-Mails...")
+
+        _report_directory = self._config.get_str("report_directory")
+        _email_list_csv = self._config.get_str("email_list_csv")
+        _full_csv_file = os.path.abspath(os.path.join(_report_directory, _email_list_csv))
+
+        try:
+            self._email_password = keyring.get_password("SWON-DOCGEN", self._email_smtp_user)
+        except Exception as e:
+            logging.info("Unable to retrieve email password: {}".format(type(e).__name__))
+            logging.info("Exception message: {}".format(e))
+            return
+        
+        print(self._email_password)
+        if self._testmode:
+            logging.info("Test Mode - Sending max (3) mails to {}".format(self._email_from))
+
+        try:
+            email_list_df = pd.read_csv(_full_csv_file)
+        except Exception as e:    
+            logging.info("Unable to load email list: {}".format(type(e).__name__))
+            logging.info("Exception message: {}".format(e))
+            return    
+
+        context = ssl.create_default_context()
+   
+        try:
+            server = smtplib.SMTP_SSL(self._email_smtp_server, self._email_smtp_port, context=context)
+            server.login(self._email_smtp_user, self._email_password)
+        except Exception as e:
+            logging.info("Unable to connect to email server: {}".format(type(e).__name__))
+            logging.info("Exception message: {}".format(e))
+            return
+
+        # For each entry in the list encode the Document and send it.  In test mode, use sender address for to and limit to 5 files
+
+        for index, entry in email_list_df.iterrows():
+            if self._testmode and index > 2:
+                break
+            logging.info(f'Sending email to {entry["Last Name"]}, {entry["First Name"]}  E-Mail: {entry["EMail"]}')
+
+            if self._testmode:
+                self._send_email(self._email_from, entry["Filename"], server)
+            else:
+                self._send_email(entry["EMail"], entry["Filename"], server)
+                
+
+        logging.info("Email Complete")
+    
+    def _send_email(self, email_address: str, filename: str, server) -> None:
+        # Create a multipart message and set headers
+        message = MIMEMultipart()
+        message["From"] = self._email_from
+        message["To"] = email_address
+        message["Subject"] = self._email_subject
+
+        # Add body to email
+        message.attach(MIMEText(self._email_body, "plain"))
+
+        # Open document file in binary mode
+        with open(filename, "rb") as attachment:
+            # Add file as application/octet-stream
+            # Email client can usually download this automatically as attachment
+            part = MIMEBase("application", "octet-stream")
+            part.set_payload(attachment.read())
+
+        # Encode file in ASCII characters to send by email
+        encoders.encode_base64(part)
+
+        # Add header as key/value pair to attachment part
+        basename = os.path.basename(filename)
+        part.add_header("Content-Disposition",f"attachment; filename= {basename}",)
+
+        # Add attachment to message and convert message to string
+        message.attach(part)
+        text = message.as_string()
+
+        # Log in to server using secure context and send email
+        try:
+            server.sendmail(self._email_from, email_address, text)
+        except Exception as e:
+            logging.info("Unable to send email: {}".format(type(e).__name__))
+            logging.info("Exception message: {}".format(e))
+
+            

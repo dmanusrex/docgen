@@ -27,6 +27,7 @@ import os
 import pandas as pd
 import logging
 import customtkinter as ctk
+import keyring
 import tkinter as tk
 from tkinter import filedialog, ttk, BooleanVar, StringVar,  HORIZONTAL
 from typing import Any
@@ -35,7 +36,7 @@ from tooltip import ToolTip
 # Appliction Specific Imports
 from config import docgenConfig
 from version import DOCGEN_VERSION
-from docgen_core import TextHandler, Data_Loader, Generate_Reports
+from docgen_core import TextHandler, Data_Loader, Generate_Reports, Email_Reports
 
 tkContainer = Any
 
@@ -248,13 +249,13 @@ class _Email_Documents_Tab(ctk.CTkFrame):   # pylint: disable=too-many-ancestors
         self._config = config
 
         self._report_directory = StringVar(value=self._config.get_str("report_directory"))
-        self._email_list = StringVar(value=self._config.get_str("email_list"))
+        self._email_list_csv = StringVar(value=self._config.get_str("email_list_csv"))
         self._email_smtp_server = StringVar(value=self._config.get_str("email_smtp_server"))
         self._email_smtp_port = StringVar(value=self._config.get_str("email_smtp_port"))
         self._email_smtp_user = StringVar(value=self._config.get_str("email_smtp_user"))
         self._email_from = StringVar(value=self._config.get_str("email_from"))
         self._email_subject = StringVar(value=self._config.get_str("email_subject"))
-        self._email_body = StringVar(value=self._config.get_str("email_body"))
+        self._email_body = self._config.get_str("email_body")
 
          # self is a vertical container that will contain 3 frames
         self.columnconfigure(0, weight=1)
@@ -273,30 +274,64 @@ class _Email_Documents_Tab(ctk.CTkFrame):   # pylint: disable=too-many-ancestors
 
         # Files Section
         ctk.CTkLabel(filesframe,
-            text="E-mail options coming soon!").grid(column=0, row=0, sticky="w", padx=10)   # pylint: disable=C0330
+            text="E-mail Configuration").grid(column=0, row=0, sticky="w", padx=10)   # pylint: disable=C0330
 
         # options Section
 
+
+        entry_width = 600
+
+#        reg_email_smtp_server = self.register(self._handle_email_smtp_server)
+#       A registered validation function seems to disable the interactive logging window. Need to investigate
+
         ctk.CTkLabel(optionsframe, text="SMTP Server", anchor="w").grid(row=1, column=0, sticky="w")
-        ctk.CTkEntry(optionsframe, textvariable=self._email_smtp_server).grid(column=1, row=1, sticky="w", padx=10, pady=10)
+
+        smtp_server_entry = ctk.CTkEntry(optionsframe, textvariable=self._email_smtp_server, width=entry_width)
+        smtp_server_entry.grid(column=1, row=1, sticky="w", padx=10, pady=10)
+        smtp_server_entry.bind('<FocusOut>', self._handle_email_smtp_server)
+
         ctk.CTkLabel(optionsframe, text="SMTP Port", anchor="w").grid(row=2, column=0, sticky="w")
-        ctk.CTkEntry(optionsframe, textvariable=self._email_smtp_port).grid(column=1, row=2, sticky="w", padx=10, pady=10)
-        ctk.CTkLabel(optionsframe, text="SMTP User", anchor="w").grid(row=3, column=0, sticky="w")
-        ctk.CTkEntry(optionsframe, textvariable=self._email_smtp_user).grid(column=1, row=3, sticky="w", padx=10, pady=10)
-        ctk.CTkLabel(optionsframe, text="E-mail From", anchor="w").grid(row=4, column=0, sticky="w")
-        ctk.CTkEntry(optionsframe, textvariable=self._email_from).grid(column=1, row=4, sticky="w", padx=10, pady=10)
-        ctk.CTkLabel(optionsframe, text="E-mail Subject", anchor="w").grid(row=5, column=0, sticky="w")
-        ctk.CTkEntry(optionsframe, textvariable=self._email_subject).grid(column=1, row=5, sticky="w", padx=10, pady=10)
-        ctk.CTkLabel(optionsframe, text="E-mail Body", anchor="w").grid(row=6, column=0, sticky="w")
+        smtp_port_entry = ctk.CTkEntry(optionsframe, textvariable=self._email_smtp_port, width=entry_width)
+        smtp_port_entry.grid(column=1, row=2, sticky="w", padx=10, pady=10)
+        smtp_port_entry.bind('<FocusOut>', self._handle_email_smtp_port)
+        
+        ctk.CTkLabel(optionsframe, text="SMTP Username", anchor="w").grid(row=3, column=0, sticky="w")
+        smtp_user_entry = ctk.CTkEntry(optionsframe, textvariable=self._email_smtp_user, width=entry_width)
+        smtp_user_entry.grid(column=1, row=3, sticky="w", padx=10, pady=10)
+        smtp_user_entry.bind('<FocusOut>', self._handle_email_smtp_user)
 
-        self.txtbodybox = ctk.CTkTextbox(master=optionsframe, state='normal')
-        self.txtbodybox.grid(column=1, row=6, sticky="w", padx=10, pady=10)
-        self.txtbodybox.insert(tk.END, "Test Text\n")
+        ctk.CTkLabel(optionsframe, text="SMTP Password", anchor="w").grid(row=4, column=0, sticky="w")
+        password_entry = ctk.CTkEntry(optionsframe, placeholder_text="Password", show="*", width=entry_width)
+        password_entry.grid(column=1, row=4, sticky="w", padx=10, pady=10)
+        password_entry.bind('<FocusOut>', self._handle_email_smtp_password)
 
-#        btn2 = ctk.CTkButton(filesframe, text="Report Directory", command=self._handle_report_dir_browse)
-#        btn2.grid(column=0, row=2, padx=20, pady=10)
-#        ToolTip(btn2, text="Select where output files will be sent")   # pylint: disable=C0330
-#        ctk.CTkLabel(filesframe, textvariable=self._report_directory).grid(column=1, row=2, sticky="w")
+        ctk.CTkLabel(optionsframe, text="E-mail From", anchor="w").grid(row=5, column=0, sticky="w")
+        email_from_entry = ctk.CTkEntry(optionsframe, textvariable=self._email_from, width=entry_width)
+        email_from_entry.grid(column=1, row=5, sticky="w", padx=10, pady=10)
+        email_from_entry.bind('<FocusOut>', self._handle_email_from)
+
+        ctk.CTkLabel(optionsframe, text="E-mail Subject", anchor="w").grid(row=6, column=0, sticky="w")
+        email_subject_entry = ctk.CTkEntry(optionsframe, textvariable=self._email_subject, width=entry_width)
+        email_subject_entry.grid(column=1, row=6, sticky="w", padx=10, pady=10)
+        email_subject_entry.bind('<FocusOut>', self._handle_email_subject)
+
+        # Body Text
+        ctk.CTkLabel(optionsframe, text="E-mail Body", anchor="w").grid(row=7, column=0, sticky="w")
+
+        self.txtbodybox = ctk.CTkTextbox(master=optionsframe, state='normal', width=entry_width)
+        self.txtbodybox.grid(column=1, row=7, sticky="w", padx=10, pady=10)
+        self.txtbodybox.insert(tk.END, self._email_body)
+
+        # Add Command Buttons
+
+        ctk.CTkLabel(buttonsframe,
+            text="Actions").grid(column=0, row=0, sticky="w", padx=10)   # pylint: disable=C0330
+
+        self.emailtest_btn = ctk.CTkButton(buttonsframe, text="Send Test EMails", command=self._handle_email_test_btn)
+        self.emailtest_btn.grid(column=0, row=1, sticky="news", padx=20, pady=10)
+        self.emailall_btn = ctk.CTkButton(buttonsframe, text="Send All Emails", command=self._handle_email_all_btn)
+        self.emailall_btn.grid(column=1, row=1, sticky="news", padx=20, pady=10)
+
 
     def _handle_report_dir_browse(self) -> None:
         directory = filedialog.askdirectory()
@@ -306,6 +341,68 @@ class _Email_Documents_Tab(ctk.CTkFrame):   # pylint: disable=too-many-ancestors
         self._config.set_str("report_directory", directory)
         self._report_directory.set(directory)
 
+    def _handle_email_smtp_server(self, event) -> bool:
+        self._config.set_str("email_smtp_server", event.widget.get())
+        return True
+
+    def _handle_email_smtp_port(self, event) -> bool:
+        self._config.set_str("email_smtp_port", event.widget.get())
+        return True
+    
+    def _handle_email_smtp_user(self, event) -> bool:
+        self._config.set_str("email_smtp_user", event.widget.get())
+        return True
+
+    def _handle_email_smtp_password(self, event) -> bool:
+        if event.widget.get() != "Password":
+            keyring.set_password("SWON-DOCGEN", self._email_smtp_user.get(), event.widget.get())
+            logging.info("Password Changed for %s" % self._email_smtp_user.get())
+        return True
+    
+    def _handle_email_from(self, event) -> bool:
+        self._config.set_str("email_from", event.widget.get())
+        return True
+    
+    def _handle_email_subject(self, event) -> bool:
+        self._config.set_str("email_subject", event.widget.get())
+        return True
+    
+    def _handle_email_body(self, event) -> bool:
+        self._config.set_str("email_body", event.widget.get())
+        return True
+
+
+
+    def buttons(self, newstate) -> None:
+        '''Enable/disable all buttons'''
+        self.emailtest_btn.configure(state = newstate)
+        self.emailall_btn.configure(state = newstate)
+
+    def _handle_email_test_btn(self) -> None:
+#        if self.df.empty:
+#            logging.info ("Load data first...")
+#            return
+        self.buttons("disabled")
+        email_thread = Email_Reports(True, self._config)
+        email_thread.start()
+        self.monitor_email_thread(email_thread)
+
+    def _handle_email_all_btn(self) -> None:
+#        if self.df.empty:
+#            logging.info ("Load data first...")
+#            return
+        self.buttons("disabled")
+        email_thread = Email_Reports(False, self._config)
+        email_thread.start()
+        self.monitor_email_thread(email_thread)
+
+    def monitor_email_thread(self, thread):
+        if thread.is_alive():
+            # check the thread every 100ms 
+            self.after(100, lambda: self.monitor_email_thread(thread))
+        else:
+            self.buttons("enabled")
+            thread.join()
 
 
 class _Logging(ctk.CTkFrame): # pylint: disable=too-many-ancestors,too-many-instance-attributes
