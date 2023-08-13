@@ -27,12 +27,14 @@ from threading import Thread
 import tkinter as tk
 import numpy as np
 import os
+from slugify import slugify
 
 from datetime import datetime
 from typing import List
 from config import docgenConfig
 from docx import Document
 import docx
+from docxcompose.composer import Composer
 
 import logging
 
@@ -77,11 +79,21 @@ class docgenCore:
         row[2].paragraphs[0].alignment = docx.enum.text.WD_ALIGN_PARAGRAPH.CENTER
         row[3].paragraphs[0].alignment = docx.enum.text.WD_ALIGN_PARAGRAPH.CENTER
   
-    def dump_data_docx(self, doc : Document, club_fullname: str, reportdate: str) -> None:
-        '''Produce the Word Document for the club'''
+    def dump_data_docx(self, club_fullname: str, reportdate: str) -> List:
+        '''Produce the Word Document for the club and return a list of files'''
  
+        _report_directory = self._config.get_str("report_directory")
+        _email_list_csv = self._config.get_str("email_list_csv")
+        csv_list = []    # CSV entries for email list (Lastname, Firstname, E-Mail address and Filename)
  
         for index, entry in self._club_data.iterrows():
+
+            # create a filename from the last and firstnames using slugify and the report directory
+
+            filename = os.path.abspath(os.path.join(_report_directory, slugify(entry["Last Name"] + "_" + entry["First Name"]) + ".docx"))
+            csv_list.append([entry["Last Name"], entry["First Name"], entry["Email"], filename])
+
+            doc = Document()
 
             doc.add_heading("2023/24 Officials Development", 0)
  
@@ -159,8 +171,13 @@ class docgenCore:
                             doc.add_paragraph("Take a Level II clinic (CT, MM, CFJ/CJE, Admin Desk or Starter) and obtain sign-offs", style="List Bullet")
                         else:
                             doc.add_paragraph("Obtain sign-offs on at least 1 Level II clinic (CT, MM, CFJ/CJE, Admin Desk or Starter)", style="List Bullet")
+            try:
+                doc.save(filename)
 
-            doc.add_page_break()
+            except Exception as e:
+                logging.info(f'Error processing offiical {entry["Last Name"]}, {entry["First Name"]}: {type(e).__name__} - {e}')
+
+        return csv_list
 
 class TextHandler(logging.Handler):
     # This class allows you to log to a Tkinter Text or ScrolledText widget
@@ -231,6 +248,10 @@ class Generate_Reports(Thread):
         _report_directory = self._config.get_str("report_directory")
         _report_file_docx = self._config.get_str("report_file_docx")
         _full_report_file = os.path.abspath(os.path.join(_report_directory, _report_file_docx))
+        _email_list_csv = self._config.get_str("email_list_csv")
+        _full_csv_file = os.path.abspath(os.path.join(_report_directory, _email_list_csv))
+
+
         club_list_names_df = self._df.loc[self._df['AffiliatedClubs'].isnull(),['ClubCode','Club']].drop_duplicates()
         club_list_names = club_list_names_df.values.tolist()
         club_list_names.sort(key=lambda x:x[0])
@@ -247,19 +268,45 @@ class Generate_Reports(Thread):
 
         report_time = datetime.now().strftime("%B %d %Y %I:%M%p")
 
-        doc = Document()
+        all_csv_entries = []
+
         for club, club_full in club_list_names:
             logging.info("Processing %s" % club_full)
-            affiliation_reg_ids = []
             club_data = self._df[(self._df["ClubCode"] == club)]
             club_data = club_data[club_data["Status"].isin(status_values)]
             club_stat = docgenCore(club, club_data, self._config)
-            club_stat.dump_data_docx(doc, club_full, report_time)
-            doc.add_page_break()
+            club_csv = club_stat.dump_data_docx(club_full, report_time)
+            all_csv_entries.extend(club_csv)
             club_summaries.append ([club, club_full, club_stat])
-        
+
+        # Create the email list CSV file    
+        # 
+        # The email list is a CSV file with the following columns:
+        #  Last Name, First Name, E-Mail address, Filename
+
+        logging.info("Creating email list CSV file")
+        email_list_df = pd.DataFrame(all_csv_entries, columns=["Last Name", "First Name", "EMail", "Filename"])
+
         try:
-            doc.save(_full_report_file)
+            email_list_df.to_csv(_full_csv_file, index=False)
+        except Exception as e:
+            logging.info("Unable to save email list: {}".format(type(e).__name__))
+            logging.info("Exception message: {}".format(e))
+        
+        # Create the master document
+
+        logging.info("Creating master document")
+
+        number_of_sections=len(all_csv_entries)
+        master = Document()
+        composer = Composer(master)
+        for i in range(0, number_of_sections):
+            doc_temp = Document(all_csv_entries[i][3])
+            doc_temp.add_page_break()
+            composer.append(doc_temp)
+
+        try:
+            composer.save(_full_report_file)
         except Exception as e:
             logging.info("Unable to save full report: {}".format(type(e).__name__))
             logging.info("Exception message: {}".format(e))

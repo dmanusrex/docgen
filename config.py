@@ -35,11 +35,11 @@ class docgenConfig:
         "officials_list": "./officials_list.xls",   # Location of RTR export file
         "report_directory": ".",                    # Report output directory
         "report_file_docx": "officials-reports.docx",   # Word File name
-        "email_list": "docgen-email-list.csv",      # Email List File name
+        "email_list_csv": "docgen-email-list.csv",      # Email List File name
         "email_smtp_server": "smtp.gmail.com",      # SMTP Server
         "email_smtp_port": "587",                   # SMTP Port
-        "email_smtp_user": "",                      # SMTP User
-        "email_from": "",                           # Email From Address
+        "email_smtp_user": "username",              # SMTP User
+        "email_from": "user@domain.com",            # Email From Address
         "email_subject": "Officials Report",        # Email Subject
         "email_body": "Please find attached the Officials Report", # Email Body
         "incl_errors": "True",                      # Include Errors

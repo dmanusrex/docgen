@@ -27,6 +27,7 @@ import os
 import pandas as pd
 import logging
 import customtkinter as ctk
+import tkinter as tk
 from tkinter import filedialog, ttk, BooleanVar, StringVar,  HORIZONTAL
 from typing import Any
 from tooltip import ToolTip
@@ -274,6 +275,23 @@ class _Email_Documents_Tab(ctk.CTkFrame):   # pylint: disable=too-many-ancestors
         ctk.CTkLabel(filesframe,
             text="E-mail options coming soon!").grid(column=0, row=0, sticky="w", padx=10)   # pylint: disable=C0330
 
+        # options Section
+
+        ctk.CTkLabel(optionsframe, text="SMTP Server", anchor="w").grid(row=1, column=0, sticky="w")
+        ctk.CTkEntry(optionsframe, textvariable=self._email_smtp_server).grid(column=1, row=1, sticky="w", padx=10, pady=10)
+        ctk.CTkLabel(optionsframe, text="SMTP Port", anchor="w").grid(row=2, column=0, sticky="w")
+        ctk.CTkEntry(optionsframe, textvariable=self._email_smtp_port).grid(column=1, row=2, sticky="w", padx=10, pady=10)
+        ctk.CTkLabel(optionsframe, text="SMTP User", anchor="w").grid(row=3, column=0, sticky="w")
+        ctk.CTkEntry(optionsframe, textvariable=self._email_smtp_user).grid(column=1, row=3, sticky="w", padx=10, pady=10)
+        ctk.CTkLabel(optionsframe, text="E-mail From", anchor="w").grid(row=4, column=0, sticky="w")
+        ctk.CTkEntry(optionsframe, textvariable=self._email_from).grid(column=1, row=4, sticky="w", padx=10, pady=10)
+        ctk.CTkLabel(optionsframe, text="E-mail Subject", anchor="w").grid(row=5, column=0, sticky="w")
+        ctk.CTkEntry(optionsframe, textvariable=self._email_subject).grid(column=1, row=5, sticky="w", padx=10, pady=10)
+        ctk.CTkLabel(optionsframe, text="E-mail Body", anchor="w").grid(row=6, column=0, sticky="w")
+
+        self.txtbodybox = ctk.CTkTextbox(master=optionsframe, state='normal')
+        self.txtbodybox.grid(column=1, row=6, sticky="w", padx=10, pady=10)
+        self.txtbodybox.insert(tk.END, "Test Text\n")
 
 #        btn2 = ctk.CTkButton(filesframe, text="Report Directory", command=self._handle_report_dir_browse)
 #        btn2.grid(column=0, row=2, padx=20, pady=10)
@@ -345,7 +363,6 @@ class docgenApp(ctk.CTkFrame):  # pylint: disable=too-many-ancestors
         self.emailtab = _Email_Documents_Tab(self.tabview.tab("E-Mail Documents"), self._config)
         self.emailtab.grid(column=0, row=0, sticky="news")
 
-
         # Logging Window
         loggingwin = _Logging(self, self._config)
         loggingwin.grid(column=0, row=2, padx=(20, 20), pady=(20, 0), sticky="news")
@@ -361,8 +378,6 @@ class docgenApp(ctk.CTkFrame):  # pylint: disable=too-many-ancestors
         version_label = ctk.CTkLabel(fr8, text="Version "+DOCGEN_VERSION)
         version_label.grid(column=1, row=0, sticky="nes")
 
-
-        
 
         
 def main():

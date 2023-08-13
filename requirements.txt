@@ -1,0 +1,23 @@
+
+# Development dependencies
+mypy
+pyinstaller
+pylint
+pytest
+pytest-pylint
+pytest-mypy
+
+# Application dependencies
+pandas 
+python_docx
+ttkwidgets
+customtkinter
+requests
+semver
+docxcomposer
+python-slugify
+
+# Documentation dependencies
+#plantweb
+#rstcheck
+#sphinx_rtd_theme
