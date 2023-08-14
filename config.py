@@ -37,11 +37,11 @@ class docgenConfig:
         "report_file_docx": "officials-reports.docx",   # Word File name
         "email_list_csv": "docgen-email-list.csv",      # Email List File name
         "email_smtp_server": "smtp.gmail.com",      # SMTP Server
-        "email_smtp_port": "587",                   # SMTP Port
-        "email_smtp_user": "username",              # SMTP User
-        "email_from": "user@domain.com",            # Email From Address
-        "email_subject": "Officials Report",        # Email Subject
-        "email_body": "Please find attached the Officials Report", # Email Body
+        "email_smtp_port": "465",                   # SMTP Port
+        "email_smtp_user": "username@gmail.com",              # SMTP User
+        "email_from": "My Name <user@gmail.com>",            # Email From Address
+        "email_subject": "Officials Development Report",        # Email Subject
+        "email_body": "Attached is your Officials Development Report", # Email Body
         "incl_errors": "True",                      # Include Errors
         "incl_inv_pending": "True",                 # Include Invoice Pending Status
         "incl_pso_pending": "True",                 # Include PSO Pending Status

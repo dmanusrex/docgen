@@ -48,6 +48,7 @@ class _Generate_Documents_Tab(ctk.CTkFrame):   # pylint: disable=too-many-ancest
 
         self.df = pd.DataFrame()
         self._officials_list = StringVar(value=self._config.get_str("officials_list"))
+        self._officials_list_filename = StringVar(value=os.path.basename(self._officials_list.get()))
         self._report_directory = StringVar(value=self._config.get_str("report_directory"))
         self._report_file = StringVar(value=self._config.get_str("report_file_docx"))
         self._ctk_theme = StringVar(value=self._config.get_str("Theme"))
@@ -79,7 +80,7 @@ class _Generate_Documents_Tab(ctk.CTkFrame):   # pylint: disable=too-many-ancest
         btn1 = ctk.CTkButton(filesframe, text="RTR List", command=self._handle_officials_browse)
         btn1.grid(column=0, row=1, padx=20, pady=10)
         ToolTip(btn1, text="Select the RTR officials export file")   # pylint: disable=C0330
-        ctk.CTkLabel(filesframe, textvariable=self._officials_list).grid(column=1, row=1, sticky="w")
+        ctk.CTkLabel(filesframe, textvariable=self._officials_list_filename).grid(column=1, row=1, sticky="w")
 
         btn2 = ctk.CTkButton(filesframe, text="Report Directory", command=self._handle_report_dir_browse)
         btn2.grid(column=0, row=2, padx=20, pady=10)
@@ -149,6 +150,7 @@ class _Generate_Documents_Tab(ctk.CTkFrame):   # pylint: disable=too-many-ancest
             return
         self._config.set_str("officials_list", directory)
         self._officials_list.set(directory)
+        self._officials_list_filename = StringVar(value=os.path.basename(self._officials_list.get()))
 
     def _handle_report_dir_browse(self) -> None:
         directory = filedialog.askdirectory()
@@ -279,7 +281,7 @@ class _Email_Documents_Tab(ctk.CTkFrame):   # pylint: disable=too-many-ancestors
         # options Section
 
 
-        entry_width = 600
+        entry_width = 500
 
 #        reg_email_smtp_server = self.register(self._handle_email_smtp_server)
 #       A registered validation function seems to disable the interactive logging window. Need to investigate
@@ -301,9 +303,9 @@ class _Email_Documents_Tab(ctk.CTkFrame):   # pylint: disable=too-many-ancestors
         smtp_user_entry.bind('<FocusOut>', self._handle_email_smtp_user)
 
         ctk.CTkLabel(optionsframe, text="SMTP Password", anchor="w").grid(row=4, column=0, sticky="w")
-        password_entry = ctk.CTkEntry(optionsframe, placeholder_text="Password", show="*", width=entry_width)
-        password_entry.grid(column=1, row=4, sticky="w", padx=10, pady=10)
-        password_entry.bind('<FocusOut>', self._handle_email_smtp_password)
+        self.password_entry = ctk.CTkEntry(optionsframe, placeholder_text="Password", show="*", width=entry_width)
+        self.password_entry.grid(column=1, row=4, sticky="w", padx=10, pady=10)
+        self.password_entry.bind('<FocusOut>', self._handle_email_smtp_password)
 
         ctk.CTkLabel(optionsframe, text="E-mail From", anchor="w").grid(row=5, column=0, sticky="w")
         email_from_entry = ctk.CTkEntry(optionsframe, textvariable=self._email_from, width=entry_width)
@@ -321,6 +323,7 @@ class _Email_Documents_Tab(ctk.CTkFrame):   # pylint: disable=too-many-ancestors
         self.txtbodybox = ctk.CTkTextbox(master=optionsframe, state='normal', width=entry_width)
         self.txtbodybox.grid(column=1, row=7, sticky="w", padx=10, pady=10)
         self.txtbodybox.insert(tk.END, self._email_body)
+        self.txtbodybox.bind('<FocusOut>', self._handle_email_body)
 
         # Add Command Buttons
 
@@ -351,6 +354,7 @@ class _Email_Documents_Tab(ctk.CTkFrame):   # pylint: disable=too-many-ancestors
     
     def _handle_email_smtp_user(self, event) -> bool:
         self._config.set_str("email_smtp_user", event.widget.get())
+        self.password_entry.delete(0, tk.END)
         return True
 
     def _handle_email_smtp_password(self, event) -> bool:
@@ -368,10 +372,8 @@ class _Email_Documents_Tab(ctk.CTkFrame):   # pylint: disable=too-many-ancestors
         return True
     
     def _handle_email_body(self, event) -> bool:
-        self._config.set_str("email_body", event.widget.get())
+        self._config.set_str("email_body", event.widget.get("0.0", "end"))
         return True
-
-
 
     def buttons(self, newstate) -> None:
         '''Enable/disable all buttons'''
@@ -379,18 +381,12 @@ class _Email_Documents_Tab(ctk.CTkFrame):   # pylint: disable=too-many-ancestors
         self.emailall_btn.configure(state = newstate)
 
     def _handle_email_test_btn(self) -> None:
-#        if self.df.empty:
-#            logging.info ("Load data first...")
-#            return
         self.buttons("disabled")
         email_thread = Email_Reports(True, self._config)
         email_thread.start()
         self.monitor_email_thread(email_thread)
 
     def _handle_email_all_btn(self) -> None:
-#        if self.df.empty:
-#            logging.info ("Load data first...")
-#            return
         self.buttons("disabled")
         email_thread = Email_Reports(False, self._config)
         email_thread.start()

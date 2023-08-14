@@ -16,6 +16,7 @@ requests
 semver
 docxcomposer
 python-slugify
+keyring
 
 # Documentation dependencies
 #plantweb
