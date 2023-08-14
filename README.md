@@ -21,12 +21,12 @@ This will run on on Windows 10 or Windows 11 PC.   The user must have COA, ROR o
 
 1. Select an RTR export file and click the "Load Datafile" button.
 2. Set the output directory for individual files.  
-3. (Optional) Generate a single document with all the results
+3. A single document with all the results will also be produced
 4. Generate the report
 5. Update any of the individual files (if necessary)
 6. On the e-mail tab, add your e-mail server/username and password.
-7. Send a test e-mail to verify settings are correct.
-8. Click "Send All" to send emails to all officials
+7. Use the "Test E-mail" button to verify settings are correct.
+8. Click "Send E-Mails" to send emails to all officials
 
 ## License
 This software is licensed under the MIT License
