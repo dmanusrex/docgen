@@ -28,6 +28,7 @@ import pandas as pd
 import logging
 import customtkinter as ctk
 import keyring
+import webbrowser
 import tkinter as tk
 from tkinter import filedialog, ttk, BooleanVar, StringVar,  HORIZONTAL
 from typing import Any
@@ -150,7 +151,7 @@ class _Generate_Documents_Tab(ctk.CTkFrame):   # pylint: disable=too-many-ancest
             return
         self._config.set_str("officials_list", directory)
         self._officials_list.set(directory)
-        self._officials_list_filename = StringVar(value=os.path.basename(self._officials_list.get()))
+        self._officials_list_filename.set(os.path.basename(directory))
 
     def _handle_report_dir_browse(self) -> None:
         directory = filedialog.askdirectory()
@@ -466,8 +467,12 @@ class docgenApp(ctk.CTkFrame):  # pylint: disable=too-many-ancestors
         fr8.rowconfigure(0, weight=1)
         fr8.columnconfigure(0, weight=1)
         link_label = ctk.CTkLabel(fr8,
-            text="Documentation: Maybe someday!")  # pylint: disable=C0330
+            text="Documentation: https://swon-docgen.readthedocs.io")  # pylint: disable=C0330
         link_label.grid(column=0, row=0, sticky="w")
+        # Custom Tkinter clickable label example https://github.com/TomSchimansky/CustomTkinter/issues/1208
+        link_label.bind("<Button-1>", lambda event: webbrowser.open("https://swon-docgen.readthedocs.io")) # link the command function
+        link_label.bind("<Enter>", lambda event: link_label.configure(font=("",13,"underline"), cursor="hand2"))
+        link_label.bind("<Leave>", lambda event: link_label.configure(font=("",13), cursor="arrow"))
         version_label = ctk.CTkLabel(fr8, text="Version "+DOCGEN_VERSION)
         version_label.grid(column=1, row=0, sticky="nes")
 
