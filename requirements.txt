@@ -19,6 +19,7 @@ python-slugify
 keyring
 
 # Documentation dependencies
-#plantweb
-#rstcheck
-#sphinx_rtd_theme
+plantweb
+rstcheck
+sphinx_rtd_theme
+sphinx_tabs
