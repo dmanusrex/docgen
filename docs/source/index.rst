@@ -44,11 +44,11 @@ License
 The software is licensed under the MIT License.
 
 If you are interested in contributing, `check out the project's repository on
-GitHub. <https://github.com/dmanuxrex/docgen>`_:
+GitHub. <https://github.com/dmanusrex/docgen>`_:
 
-- `View the latest releases <https://github.com/dmanuxrex/docgen/releases>`_ ✨
-- `Ask Questions <https://github.com/dmanuxrex/docgen/discussions>`_ 💬
-- `File bug reports <https://github.com/dmanuxrex/docgen/issues>`_ 🐞
-- `Download the source code <https://github.com/dmanuxrex/docgen>`_ 📦
-- `Contribute enhancements <https://github.com/dmanuxrex/docgen/pulls>`_ 🍻`
+- `View the latest releases <https://github.com/dmanusrex/docgen/releases>`_ ✨
+- `Ask Questions <https://github.com/dmanusrex/docgen/discussions>`_ 💬
+- `File bug reports <https://github.com/dmanusrex/docgen/issues>`_ 🐞
+- `Download the source code <https://github.com/dmanusrex/docgen>`_ 📦
+- `Contribute enhancements <https://github.com/dmanusrex/docgen/pulls>`_ 🍻`
 
